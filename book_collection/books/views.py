@@ -2,6 +2,8 @@ from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .models import Book
+from django.db.models import Count
+import random
 
 @csrf_exempt
 def book_list(request):
@@ -50,4 +52,23 @@ def book_detail(request, id):
         return JsonResponse({'message': 'Book deleted successfully'}, status=204)
     else:
         return HttpResponseNotAllowed(['GET', 'PUT', 'DELETE'])
+
+@csrf_exempt
+def book_recommendation(request):
+    if request.method == 'GET':
+        count = Book.objects.aggregate(count=Count('id'))['count']
+        if count == 0:
+            return JsonResponse({'error': 'No books available'}, status=404)
+        random_index = random.randint(0, count - 1)
+        book = Book.objects.all()[random_index]
+        data = {
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'isbn': book.isbn,
+            'published_year': book.published_year,
+        }
+        return JsonResponse(data)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
